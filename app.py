@@ -843,7 +843,7 @@ def start_comparison(root, file1, file2, output_folder, start_button):
     thread.start()
 
 
-# --- Minimal runnable GUI for demo/testing ---
+# --- GUI ---
 
 def build_demo_gui():
     global _root_window
@@ -854,22 +854,22 @@ def build_demo_gui():
     frm = tk.Frame(root, padx=10, pady=10)
     frm.pack()
 
-    tk.Label(frm, text='File 1:').grid(row=0, column=0, sticky='e')
+    tk.Label(frm, text='Plik 1:').grid(row=0, column=0, sticky='e')
     file1_var = tk.StringVar()
     tk.Entry(frm, textvariable=file1_var, width=60).grid(row=0, column=1)
     tk.Button(frm, text='Browse', command=lambda: file1_var.set(filedialog.askopenfilename(filetypes=[('Excel files', '*.xlsx;*.xls')]))).grid(row=0, column=2)
 
-    tk.Label(frm, text='File 2:').grid(row=1, column=0, sticky='e')
+    tk.Label(frm, text='Plik 2:').grid(row=1, column=0, sticky='e')
     file2_var = tk.StringVar()
     tk.Entry(frm, textvariable=file2_var, width=60).grid(row=1, column=1)
     tk.Button(frm, text='Browse', command=lambda: file2_var.set(filedialog.askopenfilename(filetypes=[('Excel files', '*.xlsx;*.xls')]))).grid(row=1, column=2)
 
-    tk.Label(frm, text='Output Folder:').grid(row=2, column=0, sticky='e')
+    tk.Label(frm, text='Folder wyjściowy:').grid(row=2, column=0, sticky='e')
     out_var = tk.StringVar()
     tk.Entry(frm, textvariable=out_var, width=60).grid(row=2, column=1)
     tk.Button(frm, text='Browse', command=lambda: out_var.set(filedialog.askdirectory())).grid(row=2, column=2)
 
-    start_btn = tk.Button(frm, text='Start Comparison', width=20, command=lambda: start_comparison(root, file1_var.get(), file2_var.get(), out_var.get() or os.getcwd(), start_btn))
+    start_btn = tk.Button(frm, text='Rozpocznij porównanie', width=20, command=lambda: start_comparison(root, file1_var.get(), file2_var.get(), out_var.get() or os.getcwd(), start_btn))
     start_btn.grid(row=3, column=1, pady=10)
 
     root.mainloop()
