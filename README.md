@@ -1,7 +1,7 @@
 # Advanced Instructions & Cautions for Desk Comparator
 
 ## 🎯 Purpose & Core Functionality
-** AT THE END OF THE FILE YOU WILL FIND THE INSTRUCTION OF PROGRAM USE IN POLISH 🇵🇱 **
+** AT THE END OF THE FILE YOU WILL FIND THE INSTRUCTION OF PROGRAM USE IN POLISH 🇵🇱 
 
 This tool compares two Excel inventory/desk reports and identifies serial number mismatches per desk. It's designed for MNTR (monitor) tracking across desk locations.
 
