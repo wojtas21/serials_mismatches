@@ -492,22 +492,16 @@ Narzędzie porównuje dwa raporty Excel zawierające numery seryjne monitorów p
 - Kolumny z numerami seryjnymi MUSZĄ zaczynać się od `S.N` (duże S, kropka, duże N)
 - Format pliku: `.xlsx` lub `.xls`
 
-### 🚀 Uruchomienie programu
+### 🚀 Cheatsheet
 
-**Wersja GUI (graficzny interfejs):**
-```powershell
-python pytext_with_progress.py
-```
-
-**Wersja bez interfejsu (headless):**
-```powershell
-python headless_quick_run.py
-```
-
-**Tworzenie pliku wykonywalnego (.exe):**
-```powershell
-pyinstaller pytext_with_progress.py --onefile --noconsole
-```
+| Zadanie | Komenda/Akcja |
+|--------|----------------|
+| Uruchomienie GUI | `python <nazwa_pliku.py>` lub utwórz plik .exe za pomocą pyinstaller: `pyinstaller <nazwa_pliku.py> --onefile --noconsole` |
+| Sprawdzenie postępu | Obserwuj pasek postępu (0–100%) |
+| Anulowanie operacji | Zamknij okno postępu |
+| Naprawa problemu „zawieszenia” | Poczekaj 2 minuty → jeśli nadal zawieszone, uruchom narzędzie ponownie |
+| Naprawa błędu uprawnień | Zamknij WSZYSTKIE pliki Excel |
+| Naprawa błędu pamięci | Zamknij inne aplikacje, uruchom narzędzie ponownie |
 
 ### 📊 Jak czytać wyniki
 
