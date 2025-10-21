@@ -469,3 +469,149 @@ mask = s.str.match(r'^[A-Za-z]*\d{3}$')  # Change \d{3} to \d{4} for 4-digit
 **Version**: 2.1 (Production Release - Debug Logging Removed)  
 **Python**: 3.8+ required  
 **Dependencies**: pandas, openpyxl, tkinter (stdlib)
+
+---
+
+## 🇵🇱 INSTRUKCJA PL - Porównywanie raportów Excel
+
+### 🎯 Cel narzędzia
+
+Narzędzie porównuje dwa raporty Excel zawierające numery seryjne monitorów przypisanych do biurek i identyfikuje różnice.
+
+### 📋 Wymagania plików wejściowych
+
+**Struktura kolumn:**
+- Kolumna `Desk_ID` - identyfikator biurka (np. R1230, T890)
+- Kolumna `Type` - typ urządzenia (wartość "MNTR" dla monitorów)
+- Kolumny `S.N1`, `S.N2`, `S.N3` itd. - numery seryjne monitorów
+- Opcjonalnie: `skan`, `skan2` - do weryfikacji numerów seryjnych
+
+**⚠️ WAŻNE:**
+- Pliki Excel MUSZĄ być zamknięte przed uruchomieniem programu
+- Kolumny z numerami seryjnymi MUSZĄ zaczynać się od `S.N` (duże S, kropka, duże N)
+- Format pliku: `.xlsx` lub `.xls`
+
+### 🚀 Uruchomienie programu
+
+**Wersja GUI (graficzny interfejs):**
+```powershell
+python pytext_with_progress.py
+```
+
+**Wersja bez interfejsu (headless):**
+```powershell
+python headless_quick_run.py
+```
+
+**Tworzenie pliku wykonywalnego (.exe):**
+```powershell
+pyinstaller pytext_with_progress.py --onefile --noconsole
+```
+
+### 📊 Jak czytać wyniki
+
+Program generuje plik Excel `desk_mismatches_YYYYMMDD_HHMMSS.xlsx` zawierający:
+
+| Kolumna | Znaczenie |
+|---------|-----------|
+| `Room` | Pomieszczenie (litera z identyfikatora biurka) |
+| `Desk_Number` | Numer biurka |
+| `Only_in_File1` | Numery seryjne tylko w pierwszym pliku |
+| `Only_in_File2` | Numery seryjne tylko w drugim pliku |
+
+**Interpretacja wyników:**
+
+- **Only_in_File1** - urządzenia zarejestrowane w Pliku 1, ale BRAK ich w Pliku 2
+- **Only_in_File2** - urządzenia zarejestrowane w Pliku 2, ale BRAK ich w Pliku 1
+- **Brak biurka w wynikach** - wszystkie numery seryjne są zgodne ✓
+- **Pusty plik wynikowy** - wszystkie dane są zgodne między plikami ✓
+
+**Przykład:**
+
+| Room | Desk_Number | Only_in_File1 | Only_in_File2 |
+|------|-------------|---------------|---------------|
+| R | 1230 | V123456 | |
+| R | 1450 | | V789012, V654321 |
+
+**Oznacza:**
+- Biurko R1230: monitor V123456 jest w Pliku 1, ale go nie ma w Pliku 2
+- Biurko R1450: monitory V789012 i V654321 są w Pliku 2, ale ich nie ma w Pliku 1
+
+### ⚠️ Najczęstsze problemy
+
+#### Problem 1: "Permission denied" / Brak dostępu do pliku
+**Przyczyna:** Pliki Excel są otwarte  
+**Rozwiązanie:** Zamknij WSZYSTKIE pliki Excel przed uruchomieniem programu
+
+#### Problem 2: "No serial columns found!"
+**Przyczyna:** Kolumny z numerami seryjnymi nie zaczynają się od `S.N`  
+**Rozwiązanie:** 
+1. Otwórz plik Excel
+2. Zmień nazwy kolumn na: `S.N1`, `S.N2`, `S.N3` itd.
+3. Zapisz i uruchom ponownie
+
+#### Problem 3: Program zawiesza się na 26%
+**Przyczyna:** Bardzo duży plik (>50 000 wierszy)  
+**Rozwiązanie:** 
+- Poczekaj 2-3 minuty
+- Zamknij inne aplikacje aby zwolnić pamięć
+- Spróbuj z mniejszym podzbiorem danych
+
+#### Problem 4: Nieoczekiwane wpisy "Blanks" lub "Unassigned"
+**Przyczyna:** W danych źródłowych brakuje wartości Desk_ID  
+**Rozwiązanie:** Sprawdź pliki wejściowe i uzupełnij brakujące identyfikatory biurek
+
+### 🔧 Automatyczna normalizacja danych
+
+Program automatycznie normalizuje dane:
+
+**Identyfikatory biurek:**
+```
+"R123"      → "R1230"    (dodaje 0 do 3-cyfrowych numerów)
+"R-123"     → "R1230"    (usuwa znaki interpunkcyjne)
+"room 456"  → "Room4560" (usuwa spacje, wielka litera)
+""          → "Blanks"   (puste wartości)
+```
+
+**Numery seryjne:**
+```
+"ABC-123-XYZ"  → "ABC123XYZ"  (usuwa myślniki)
+"abc 123 xyz"  → "ABC123XYZ"  (usuwa spacje, wielkie litery)
+"  V12345  "   → "V12345"     (usuwa białe znaki)
+```
+
+**⚠️ UWAGA:** Normalizacja jest nieodwracalna w wynikach!
+
+### 💡 Najlepsze praktyki
+
+**✓ ZALECANE:**
+- Ustandaryzuj format Desk_ID przed porównaniem
+- Używaj spójnych wartości Type ("MNTR")
+- Nazywaj kolumny seryjne: S.N1, S.N2, itd.
+- Usuń nadmiarowe białe znaki z danych
+
+**❌ NIEZALECANE:**
+- Mieszanie formatów (R123 i R1230 jako różne biurka)
+- Scalanie komórek w wierszu nagłówka
+- Wiele wierszy nagłówków
+- Formuły w kolumnach z numerami seryjnymi
+
+### 📞 Wsparcie techniczne
+
+W przypadku problemów:
+1. Sprawdź sekcję "Troubleshooting" powyżej (po angielsku)
+2. Upewnij się, że struktura plików jest poprawna
+3. Zweryfikuj nazwy kolumn (S.N1, S.N2, itd.)
+4. Sprawdź czy wszystkie pliki Excel są zamknięte
+
+---
+
+**Wymagania systemowe:**
+- Python 3.8 lub nowszy
+- Biblioteki: pandas, openpyxl, tkinter
+- System operacyjny: Windows, Linux, macOS
+
+**Instalacja zależności:**
+```powershell
+pip install pandas openpyxl
+```
