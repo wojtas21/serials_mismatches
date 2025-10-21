@@ -187,6 +187,83 @@ BEFORE running, consider:
 | `Only_in_File1` | Serials present ONLY in first file | "ABC123, DEF456" |
 | `Only_in_File2` | Serials present ONLY in second file | "XYZ999, GHI789" |
 
+#### **🔍 How to Read the Output:**
+
+The output shows **ONLY MISMATCHES** - serials that differ between the two files. Matching serials are automatically excluded.
+
+**Example Output:**
+
+| Room | Desk_Number | Only_in_File1 | Only_in_File2 |
+|------|-------------|---------------|---------------|
+| R | 1230 | V123456 | |
+| R | 1450 | | V789012, V654321 |
+| T | 890 | V111222 | V333444 |
+
+**How to interpret each row:**
+
+1. **Room + Desk_Number**: Identifies which desk has mismatches
+
+2. **Only_in_File1**: Serial numbers found in File 1 but **MISSING** from File 2
+   - ✓ These devices are registered in File 1
+   - ✗ These devices are NOT found in File 2
+   - **Action needed**: Add these serials to File 2 OR remove from File 1
+
+3. **Only_in_File2**: Serial numbers found in File 2 but **MISSING** from File 1
+   - ✓ These devices are registered in File 2
+   - ✗ These devices are NOT found in File 1
+   - **Action needed**: Add these serials to File 1 OR remove from File 2
+
+4. **Both columns populated**: The desk has completely different serials in each file
+   - Example: Row 3 above shows desk T890 has V111222 in File 1 but V333444 in File 2
+   - **Action needed**: Investigate which is correct
+
+5. **Multiple serials**: When a desk has multiple mismatched serials, they appear comma-separated
+   - Example: `V789012, V654321` means TWO serials are missing
+
+**Real-World Scenarios:**
+
+```
+Scenario 1: Serial Added to File 2
+┌────────────────────────────────────────────────┐
+│ File 1: Desk R1230 has V123456                 │
+│ File 2: Desk R1230 has V123456, V789012        │
+│ Output: R | 1230 | | V789012                   │
+│ Meaning: V789012 is new in File 2              │
+└────────────────────────────────────────────────┘
+
+Scenario 2: Serial Removed from File 2
+┌────────────────────────────────────────────────┐
+│ File 1: Desk R1230 has V123456, V789012        │
+│ File 2: Desk R1230 has V123456                 │
+│ Output: R | 1230 | V789012 |                   │
+│ Meaning: V789012 was removed from File 2       │
+└────────────────────────────────────────────────┘
+
+Scenario 3: Complete Mismatch
+┌────────────────────────────────────────────────┐
+│ File 1: Desk R1230 has V111111                 │
+│ File 2: Desk R1230 has V222222                 │
+│ Output: R | 1230 | V111111 | V222222           │
+│ Meaning: Different serials - investigate!      │
+└────────────────────────────────────────────────┘
+
+Scenario 4: Perfect Match (NOT in output)
+┌────────────────────────────────────────────────┐
+│ File 1: Desk R1230 has V123456, V789012        │
+│ File 2: Desk R1230 has V123456, V789012        │
+│ Output: [NO ROW FOR R1230]                     │
+│ Meaning: Serials match - nothing to report ✓   │
+└────────────────────────────────────────────────┘
+```
+
+**⚠️ IMPORTANT NOTE:**
+- **If a desk is NOT in the output**, it means ALL serials match between files ✓
+- **Empty output file** = All serials match perfectly across both files ✓
+- The tool handles different file structures automatically:
+  - **File 1**: Multiple serial columns per desk (S.N1, S.N2, etc.)
+  - **File 2**: One serial per row
+  - Both are normalized before comparison!
+
 #### **Special Output Rows:**
 - **"Blanks"**: Serials where Desk_ID was empty/blank in BOTH files
 - **"Unassigned"**: Serials where desk couldn't be inferred (ambiguous)

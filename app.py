@@ -739,7 +739,44 @@ def compare_excels(file1, file2, output_folder, progress_callback=None):
         for col in ['Only_in_File1', 'Only_in_File2']:
             if col not in grouped.columns:
                 grouped[col] = ''
-        result_df = grouped[['Room', 'Desk_Number', 'Only_in_File1', 'Only_in_File2']]
+        result_df = grouped[['Room', 'Desk_Number', 'Only_in_File1', 'Only_in_File2']].copy()
+        
+        # Remove serials that appear in BOTH columns (false mismatches from desk inference)
+        rows_to_keep = []
+        for idx in result_df.index:
+            val1 = result_df.at[idx, 'Only_in_File1']
+            val2 = result_df.at[idx, 'Only_in_File2']
+            
+            # Convert to string and split into sets
+            str1 = str(val1) if pd.notna(val1) and str(val1).strip() else ''
+            str2 = str(val2) if pd.notna(val2) and str(val2).strip() else ''
+            
+            if not str1 and not str2:
+                continue  # Skip empty rows
+            
+            # Split by comma and strip whitespace
+            serials_1 = set(s.strip() for s in str1.split(',') if s.strip())
+            serials_2 = set(s.strip() for s in str2.split(',') if s.strip())
+            
+            # Find common serials (these are NOT mismatches - both files have them)
+            common = serials_1 & serials_2
+            
+            if common:
+                # Remove common serials from both sets
+                serials_1 -= common
+                serials_2 -= common
+            
+            # Only keep row if there are actual mismatches remaining
+            if serials_1 or serials_2:
+                result_df.at[idx, 'Only_in_File1'] = ', '.join(sorted(serials_1)) if serials_1 else ''
+                result_df.at[idx, 'Only_in_File2'] = ', '.join(sorted(serials_2)) if serials_2 else ''
+                rows_to_keep.append(idx)
+        
+        # Filter to only rows with actual mismatches
+        if rows_to_keep:
+            result_df = result_df.loc[rows_to_keep].reset_index(drop=True)
+        else:
+            result_df = pd.DataFrame(columns=['Room', 'Desk_Number', 'Only_in_File1', 'Only_in_File2'])
 
     # Save results
     cb(95, 'Saving results...')
