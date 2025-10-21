@@ -1,0 +1,20 @@
+# Whitelist approach: Ignore everything except specific files
+# This keeps ONLY pytext_with_progress.py and dist/ folder
+
+# Ignore everything
+/*
+
+# But keep these:
+!.gitignore
+!pytext_with_progress.py
+!dist/
+
+# Ignore common artifacts even in allowed dirs
+__pycache__/
+*.py[cod]
+*.pyc
+*.log
+*.xlsx
+*.xls
+.DS_Store
+Thumbs.db
