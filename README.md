@@ -605,6 +605,24 @@ W przypadku problemów:
 3. Zweryfikuj nazwy kolumn (S.N1, S.N2, itd.)
 4. Sprawdź czy wszystkie pliki Excel są zamknięte
 
+### Prosta instrukcja
+1.Pliki Excel z numerami seryjnymi:
+- Na początku pliku zrób kolumnę „Desk_ID”. Wpisz do niej wszystkie ID biurek / nazwy pokoi.
+- Potem następne kolumny, powinny mieć nazwy zaczynające się od „S.N” (np. „S.N 1”, „S.N.2”), do nich wpisz numery seryjne.
+- Przykład: 
+<img width="945" height="691" alt="image" src="https://github.com/user-attachments/assets/e7c817a9-2b75-4715-9994-88655bfcbd7d" />
+- Stwórz 2 takie pliki żeby je porównać.
+
+2. Podstawowe użycie programu porównującego:
+- Otwórz program.
+- Wybierz dwa wcześniej zrobione pliki Excela zawierające informacje o biurku i numerze seryjnym.
+<img width="945" height="355" alt="image" src="https://github.com/user-attachments/assets/1b2462b9-ac05-46b5-ac91-3cf39a0150c5" />
+- Wybierz folder wyjściowy.
+<img width="945" height="457" alt="image" src="https://github.com/user-attachments/assets/38ff7682-d90e-462c-8eb7-7544c3b48697" />
+- Kliknij „Rozpocznij porównanie”
+- W wcześniej wybranym folderze wyjściowym pojawi się plik z porównaniem
+<img width="945" height="515" alt="image" src="https://github.com/user-attachments/assets/618a4730-7360-4eea-94ad-e19f5917ad8a" />
+
 ---
 
 **Wymagania systemowe:**
