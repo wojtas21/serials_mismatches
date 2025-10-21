@@ -282,22 +282,6 @@ BEFORE running, consider:
 - Include formulas in serial columns
 ```
 
-#### **2. File Organization**
-```
-Recommended folder structure:
-/Desk_Comparisons/
-  /Input/
-    inventory_file1.xlsx
-    inventory_file2.xlsx
-  /Output/
-    (tool creates timestamped files here)
-  /Archive/
-    (move old comparisons here)
-```
-
-#### **3. Regular Maintenance**
-- **Weekly**: Archive old output files
-- **Monthly**: Review "Unassigned" entries for data quality issues
 
 ---
 
@@ -328,7 +312,7 @@ mask = s.str.match(r'^[A-Za-z]*\d{3}$')  # Change \d{3} to \d{4} for 4-digit
 
 | Task | Command/Action |
 |------|----------------|
-| Run GUI | `python pytext_with_progress.py` or create exe file using pyinstaller `pyinstaller <filename.py> --onefile --noconsole`  |
+| Run GUI | `python <filename.py>` or create exe file using pyinstaller `pyinstaller <filename.py> --onefile --noconsole`  |
 | Check progress | Watch progress bar (0-100%) |
 | Cancel operation | Close progress window |
 | Fix "stuck" issue | Wait 2 min → if still stuck, restart tool |
