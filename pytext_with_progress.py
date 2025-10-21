@@ -8,7 +8,6 @@ import os
 from datetime import datetime
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment
-from collections import defaultdict
 import traceback
 
 # --- Thread-safe messagebox wrapper ---
@@ -260,17 +259,6 @@ def compare_excels(file1, file2, output_folder, progress_callback=None):
         if progress_callback:
             progress_callback(percent, msg)
 
-    # lightweight file logger for debugging long runs
-    def _log_debug(msg):
-        try:
-            log_dir = output_folder if output_folder else os.getcwd()
-            os.makedirs(log_dir, exist_ok=True)
-            with open(os.path.join(log_dir, 'pytext_debug.log'), 'a', encoding='utf-8') as f:
-                f.write(f"{datetime.now().isoformat()} - {msg}\n")
-        except Exception:
-            # avoid raising from logging
-            pass
-
     # Validate file paths
     cb(0, 'Validating paths...')
     if not os.path.exists(file1):
@@ -391,9 +379,7 @@ def compare_excels(file1, file2, output_folder, progress_callback=None):
         return df
 
     df1 = ensure_desk_col(df1)
-    _log_debug('Ensured desk column presence in file1')
     df2 = ensure_desk_col(df2)
-    _log_debug('Ensured desk column presence in file2')
 
     cb(20, 'Filtering MNTR rows...')
     try:
@@ -430,13 +416,9 @@ def compare_excels(file1, file2, output_folder, progress_callback=None):
         return df
 
     cb(26, 'Fixing Desk_IDs in file 1...')
-    _log_debug('Starting fix_desk_ids for file1')
     df1 = fix_desk_ids(df1)
-    _log_debug('Completed fix_desk_ids for file1')
     cb(28, 'Fixing Desk_IDs in file 2...')
-    _log_debug('Starting fix_desk_ids for file2')
     df2 = fix_desk_ids(df2)
-    _log_debug('Completed fix_desk_ids for file2')
 
     cb(30, 'Starting Desk ID normalization...')
     try:
@@ -554,8 +536,7 @@ def compare_excels(file1, file2, output_folder, progress_callback=None):
         df1_pairs = df1_normalized[['Desk_ID', 'Serial_Number']].dropna().copy()
         df2_pairs = df2_normalized[['Desk_ID', 'Serial_Number']].dropna().copy()
         cb(76, f'Created pairs dataframes - File1: {len(df1_pairs)} rows, File2: {len(df2_pairs)} rows')
-    except Exception as e:
-        print(f"Error creating pairs dataframes for serial maps: {e}")
+    except Exception:
         df1_pairs = pd.DataFrame(columns=['Desk_ID', 'Serial_Number'])
         df2_pairs = pd.DataFrame(columns=['Desk_ID', 'Serial_Number'])
 
