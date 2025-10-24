@@ -148,7 +148,12 @@ def _derive_serial_from_skan(skan_val, skan2_val):
 
 def _apply_skan_replacements(df, serial_columns, cb=None):
     """For each column in serial_columns, replace values starting with '0'
-    by deriving from skan/skan2 when possible. Returns count of replacements and sample list.
+    by deriving from the CORRECT skan column based on S.N column position.
+    
+    CRITICAL RULE:
+    - If serial in S.N 1 starts with '0' → use skan2 for replacement
+    - If serial in S.N 2 starts with '0' → use skan for replacement
+    - Extract substring starting from 'V' or prepend 'V' to digits starting with 6
     """
     replaced = 0
     samples = []
@@ -168,10 +173,31 @@ def _apply_skan_replacements(df, serial_columns, cb=None):
         mask = df[col].astype(str).str.startswith('0', na=False)
         if not mask.any():
             continue
+        
         idxs = df.index[mask]
         for i in idxs:
-            skan_val = df.at[i, 'skan'] if 'skan' in df.columns else None
-            skan2_val = df.at[i, 'skan2'] if 'skan2' in df.columns else None
+            # Determine which skan column to use based on S.N column name
+            col_lower = col.lower().replace(' ', '').replace('_', '').replace('.', '')
+            
+            # If it's S.N 1 (or S.N1, S.N_1, etc.) → use skan2
+            # If it's S.N 2 (or S.N2, S.N_2, etc.) → use skan
+            skan_val = None
+            skan2_val = None
+            
+            if 'sn1' in col_lower or col_lower.endswith('1'):
+                # S.N 1 → use skan2
+                skan2_val = df.at[i, 'skan2'] if 'skan2' in df.columns else None
+                source_col = 'skan2'
+            elif 'sn2' in col_lower or col_lower.endswith('2'):
+                # S.N 2 → use skan
+                skan_val = df.at[i, 'skan'] if 'skan' in df.columns else None
+                source_col = 'skan'
+            else:
+                # Default: try both (old behavior)
+                skan_val = df.at[i, 'skan'] if 'skan' in df.columns else None
+                skan2_val = df.at[i, 'skan2'] if 'skan2' in df.columns else None
+                source_col = 'skan/skan2'
+            
             new_serial = _derive_serial_from_skan(skan_val, skan2_val)
             if new_serial:
                 old = df.at[i, col]
@@ -179,6 +205,11 @@ def _apply_skan_replacements(df, serial_columns, cb=None):
                 replaced += 1
                 if len(samples) < 5:
                     samples.append((col, old, new_serial))
+                # DEBUG: Log specific serial for troubleshooting
+                if old and ('CONB6' in str(old).upper() or 'C0FDH' in str(old).upper() or 'C0NB6' in str(old).upper()):
+                    desk_id = df.at[i, 'Desk_ID'] if 'Desk_ID' in df.columns else 'N/A'
+                    print(f"DEBUG: REPLACED {col} serial {old} -> {new_serial} (from {source_col}) at Desk_ID={desk_id}, skan={skan_val}, skan2={skan2_val}")
+    
     return replaced, samples
 
 
@@ -318,6 +349,10 @@ def compare_excels(file1, file2, output_folder, progress_callback=None):
                 if str(c).startswith('S.N'):
                     usecols.append(c)
                     continue
+                # keep columns with 'serial' keyword (but not 'skan')
+                if 'serial' in lc and 'skan' not in lc:
+                    usecols.append(c)
+                    continue
                 # keep desk/place/room/type/skan columns
                 if any(k in lc for k in ('desk', 'place', 'room', 'type', 'skan')):
                     usecols.append(c)
@@ -452,8 +487,29 @@ def compare_excels(file1, file2, output_folder, progress_callback=None):
         return
 
     cb(40, 'Identifying serial columns...')
-    serial_columns_file1 = [col for col in df1.columns if col.startswith('S.N')]
-    serial_columns_file2 = [col for col in df2.columns if col.startswith('S.N')]
+    # Find serial columns - they can have different names:
+    # - S.N*, S.N 1, S.N 2, etc. (standard format)
+    # - Serial, Serials, Serial_Number, etc. (alternative format)
+    def find_serial_columns(df):
+        """Find columns that contain serial numbers based on name patterns"""
+        serial_cols = []
+        for col in df.columns:
+            col_str = str(col)
+            col_lower = col_str.lower().replace(' ', '').replace('_', '').replace('.', '')
+            # Check for S.N pattern (standard)
+            if col_str.startswith('S.N'):
+                serial_cols.append(col)
+                print(f"DEBUG: Found S.N column: {col}")
+            # Check for 'serial' keyword (alternative format)
+            elif 'serial' in col_lower and 'skan' not in col_lower:
+                serial_cols.append(col)
+                print(f"DEBUG: Found serial column: {col} (col_lower={col_lower})")
+        return serial_cols
+    
+    serial_columns_file1 = find_serial_columns(df1)
+    serial_columns_file2 = find_serial_columns(df2)
+    
+    cb(41, f'Found serial columns - File1: {serial_columns_file1} | File2: {serial_columns_file2}')
     
     # Warn if no serial columns found
     if not serial_columns_file1 and not serial_columns_file2:
@@ -469,7 +525,8 @@ def compare_excels(file1, file2, output_folder, progress_callback=None):
         cb(41, f'Warning: No serial columns in file 2')
         show_warning("Warning", f"No serial columns found in file 2:\n{file2}\n\nAll serials will appear as 'Only in File 1'")
 
-    # Apply skan/skan2-based replacements for serials that start with '0'
+    # CRITICAL: Apply skan/skan2-based replacements BEFORE reshaping
+    # This ensures serials are corrected before building comparison maps
     cb(42, 'Fixing serials starting with 0 using skan/skan2...')
     replaced1, samples1 = _apply_skan_replacements(df1, serial_columns_file1)
     replaced2, samples2 = _apply_skan_replacements(df2, serial_columns_file2)
@@ -504,6 +561,24 @@ def compare_excels(file1, file2, output_folder, progress_callback=None):
     cb(65, 'Normalizing serials...')
     df1_normalized['Serial_Number'] = normalize_serial_series(df1_normalized['Serial_Number'])
     df2_normalized['Serial_Number'] = normalize_serial_series(df2_normalized['Serial_Number'])
+    
+    # DEBUG: Log sample serials after normalization and check for specific serial
+    if not df1_normalized.empty:
+        sample1 = df1_normalized.head(3)[['Desk_ID', 'Serial_Number']].to_dict('records')
+        cb(66, f'File1 sample after normalization: {sample1}')
+        # Check for the problematic serial
+        conb6_mask = df1_normalized['Serial_Number'].astype(str).str.contains('CONB6', na=False)
+        if conb6_mask.any():
+            conb6_samples = df1_normalized[conb6_mask][['Desk_ID', 'Serial_Number']].head(3).to_dict('records')
+            cb(66, f'File1 CONB6 serials found: {conb6_samples}')
+    if not df2_normalized.empty:
+        sample2 = df2_normalized.head(3)[['Desk_ID', 'Serial_Number']].to_dict('records')
+        cb(67, f'File2 sample after normalization: {sample2}')
+        # Check for the problematic serial
+        conb6_mask = df2_normalized['Serial_Number'].astype(str).str.contains('CONB6', na=False)
+        if conb6_mask.any():
+            conb6_samples = df2_normalized[conb6_mask][['Desk_ID', 'Serial_Number']].head(3).to_dict('records')
+            cb(67, f'File2 CONB6 serials found: {conb6_samples}')
 
     # Diagnostic: same serial assigned to different desks across files
     merged_serials = pd.merge(df1_normalized[['Desk_ID', 'Serial_Number']].dropna(),
@@ -513,7 +588,7 @@ def compare_excels(file1, file2, output_folder, progress_callback=None):
     if not diff_assign.empty:
         sample = diff_assign[['Serial_Number', 'Desk_ID_1', 'Desk_ID_2']].drop_duplicates().head(5)
         sample_text = '; '.join(f"{r.Serial_Number}:{r.Desk_ID_1}!={r.Desk_ID_2}" for r in sample.itertuples())
-        cb(67, f'Serial assigned to different desks across files (sample): {sample_text}')
+        cb(68, f'Serial assigned to different desks across files (sample): {sample_text}')
 
     # Build serial -> desk maps to help fill missing desk info later
     cb(69, 'Building serial maps and sets...')
@@ -624,6 +699,14 @@ def compare_excels(file1, file2, output_folder, progress_callback=None):
             if s1 or s2:  # Only process if either set has items
                 diff1 = s1 - s2
                 diff2 = s2 - s1
+                
+                # DEBUG: Check for serials that are in both files for the same desk
+                common = s1 & s2
+                if common and (diff1 or diff2):
+                    # Log first example of desk with both matching and mismatched serials
+                    if len(batch_in_1) == 0:  # Only log once per batch
+                        cb(78, f'Desk {desk}: common={list(common)[:2]}, only_f1={list(diff1)[:2]}, only_f2={list(diff2)[:2]}')
+                
                 if diff1:
                     batch_in_1.extend((desk, serial) for serial in diff1)
                 if diff2:
@@ -660,7 +743,13 @@ def compare_excels(file1, file2, output_folder, progress_callback=None):
     # Use garbage collection to ensure memory is freed
     import gc
     gc.collect()
+    
+    # DEBUG: Track if same serial appears in both lists
+    serials_in_1 = set()
+    serials_in_2 = set()
+    
     for desk_id, serial in only_in_1:
+        serials_in_1.add(serial)
         # if desk_id is blank, try to find desk for this serial from the other file
         if not desk_id or str(desk_id).strip().lower() == 'blanks':
             # only use mapping from other file when it is uniquely mapped
@@ -684,6 +773,7 @@ def compare_excels(file1, file2, output_folder, progress_callback=None):
             progress = 85 + int(10 * processed / total)
             cb(min(progress, 94), f'Preparing output... ({processed}/{total})')
     for desk_id, serial in only_in_2:
+        serials_in_2.add(serial)
         # if desk_id is blank, try to find desk for this serial from the other file
         if not desk_id or str(desk_id).strip().lower() == 'blanks':
             other_desk = serial_to_desk_1.get(serial)
@@ -703,6 +793,12 @@ def compare_excels(file1, file2, output_folder, progress_callback=None):
         if processed % 100 == 0 and total > 0:
             progress = 85 + int(10 * processed / total)
             cb(min(progress, 94), f'Preparing output... ({processed}/{total})')
+    
+    # DEBUG: Check for serials appearing in both lists (shouldn't happen)
+    duplicates = serials_in_1 & serials_in_2
+    if duplicates:
+        cb(86, f'WARNING: {len(duplicates)} serials appear in BOTH lists: {list(duplicates)[:5]}')
+        # This indicates the serial was assigned to different desks in the two files
 
     # Memory-efficient aggregation of rows
     if not rows:

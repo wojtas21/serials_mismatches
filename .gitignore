@@ -8,8 +8,6 @@
 !.gitignore
 !pytext_with_progress.py
 !dist/
-!README.md
-!ADVANCED_INSTRUCTIONS.md
 
 # Ignore common artifacts even in allowed dirs
 __pycache__/
