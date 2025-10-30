@@ -351,8 +351,8 @@ def compare_excels(file1, file2, output_folder, progress_callback=None):
                 if 'serial' in lc and 'skan' not in lc:
                     usecols.append(c)
                     continue
-                # keep desk/place/room/type/skan columns
-                if any(k in lc for k in ('desk', 'place', 'room', 'type', 'skan')):
+                # keep desk/place/room/type/skan/office columns
+                if any(k in lc for k in ('desk', 'place', 'room', 'type', 'skan', 'office')):
                     usecols.append(c)
             # if nothing selected, return None to read all columns
             return usecols if usecols else None
@@ -405,6 +405,12 @@ def compare_excels(file1, file2, output_folder, progress_callback=None):
     # Normalize possible Desk_ID-like column names to 'Desk_ID' for downstream code
     def ensure_desk_col(df):
         if 'Desk_ID' not in df.columns:
+            # Check for Office Location first (most specific)
+            for c in df.columns:
+                if 'office' in str(c).lower() and 'location' in str(c).lower():
+                    df = df.rename(columns={c: 'Desk_ID'})
+                    return df
+            # Then check for generic 'desk' column
             for c in df.columns:
                 if 'desk' in str(c).lower():
                     df = df.rename(columns={c: 'Desk_ID'})
