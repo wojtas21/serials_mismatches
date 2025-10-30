@@ -230,12 +230,10 @@ def save_formatted_excel(dataframe, output_path):
         # fallback: replace common NA markers
         df = df.replace({pd.NA: '', None: ''})
 
-    # Move 'Dom' rows to the end
+    # FILTER OUT 'Dom' rows completely - they will NOT appear in the output
     if 'Room' in df.columns:
         dom_mask = df['Room'].astype(str).str.strip().str.lower() == 'dom'
-        df_dom = df[dom_mask]
-        df_rest = df[~dom_mask]
-        df = pd.concat([df_rest, df_dom], ignore_index=True)
+        df = df[~dom_mask]  # Keep only non-Dom rows
 
     # Add headers with bold and centered formatting (use actual dataframe columns)
     headers = list(df.columns)
